@@ -1,0 +1,15 @@
+
+[Executed at: Tue Nov 12 16:24:51 PST 2019]
+
+Notebook: notebook.ipynb
+
+1. Criterion: estimation_of_initial_probs
+[Passed]
+
+2. Criterion: estimation_of_transition_prob_matrix
+[Passed]
+
+3. Criterion: estimation_of_emission_prob_matrix
+[Passed]
+
+The notebook had 0 failure(s).
