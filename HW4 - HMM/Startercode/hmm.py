@@ -11,7 +11,7 @@ class HiddenMarkovModel:
         not allow for an end state.
         
         Args:
-            states: a list giving a the names (as strings) of the hidden states of the model
+            states: a list giving the names (as strings) of the hidden states of the model
             chars: a string giving the set of characters possibly emitted by the
                 states of the model
             transition_prob_matrix: a list of lists of probabilities representing a
@@ -73,6 +73,11 @@ class HiddenMarkovModel:
         self.log_transition_prob_matrix = log_transform_matrix(self.transition_prob_matrix)
         self.log_initial_probs = log_transform_vector(self.initial_probs)
         self.log_emission_prob_matrix = log_transform_matrix(self.emission_prob_matrix)
+
+    def randomize_parameters(self):
+        self.set_parameters(random_prob_matrix(len(self.states), len(self.states)),
+                            random_prob_vector(len(self.states)),
+                            random_prob_matrix(len(self.states), len(self.chars)))
         
     def encode_states(self, state_sequence):
         """Encodes a list of state strings as a list of indices of the states."""
@@ -89,6 +94,48 @@ class HiddenMarkovModel:
     def decode_sequence(self, indices):
         """Decodes a sequence of observed character indices into a string of characters."""
         return "".join(self.chars[index] for index in indices)
+
+    def estimate_parameters(self, training_data, pseudocount=0):
+        """Estimates the parameters of the model given observed sequences and state paths.
+        
+        Computes maximum likelihood parameters for the the completely observed scenario.  
+        Args:
+            training_data: A list of tuples of the form (state_list, char_string) where
+                state_list is a list of state characters and char_string is a string
+                of observed characters.
+            pseudocount: a pseudocount to add to each observed count when computing the 
+                parameter values.  The default is zero, which corresponds to maximimum 
+                likelihood estimates without smoothing.  A value of one for this parameter
+                corresponds to Laplace smoothing.
+        """
+        # initialize matrices of counts
+        transition_count_matrix = matrix(len(self.states), len(self.states), pseudocount)
+        initial_counts = [pseudocount] * len(self.states)
+        emission_count_matrix = matrix(len(self.states), len(self.chars), pseudocount)
+        
+        for state_path, sequence in training_data:
+            encoded_sequence = self.encode_sequence(sequence)
+            encoded_state_path = self.encode_states(state_path)
+            # count transitions
+            if state_path: initial_counts[encoded_state_path[0]] += 1
+            for k, l in zip(encoded_state_path, encoded_state_path[1:]):
+                transition_count_matrix[k][l] += 1
+            # count emissions
+            for k, c in zip(encoded_state_path, encoded_sequence):
+                emission_count_matrix[k][c] += 1
+
+        self.estimate_parameters_from_counts(transition_count_matrix,
+                                             initial_counts,
+                                             emission_count_matrix)
+
+    def estimate_parameters_from_counts(self,
+                                        transition_count_matrix,
+                                        initial_counts,
+                                        emission_count_matrix):
+        """Sets the parameters of the model by normalizing counts of transitions and emissions."""
+        self.set_parameters(normalize_matrix_rows(transition_count_matrix),
+                            normalize_vector(initial_counts),
+                            normalize_matrix_rows(emission_count_matrix))
       
     def simulate(self, length):
         """Simulates a sequence of hidden states and emitted characters of
@@ -110,8 +157,15 @@ class HiddenMarkovModel:
         return (self.decode_states(state_indices), self.decode_sequence(char_indices))
 
     def log_joint_probability(self, hidden_state_string, char_string):
-        """Calculates the (natural) log joint probability (log(P(hidden_states, observed_chars))) 
-        of a path of hidden states and an observed sequence given this HMM"""
+        """Calculates the (natural) log joint probability of a path of hidden states
+        and an observed sequence given this HMM.
+        
+        Args:
+            hidden_state_string: a string representing the sequence of hidden states (pi)
+            char_string: a string representing the sequence of observed characters (X)
+        Returns:
+            log(P(hidden_states, observed_chars))
+        """
         state_indices = self.encode_states(hidden_state_string)
         char_indices = self.encode_sequence(char_string)
 
@@ -127,18 +181,42 @@ class HiddenMarkovModel:
         return log_p
 
     def posterior_decoding_path(self, char_string):
+        """Computes the posterior decoding path of hidden states for the observed sequence.
+
+        In the case that multiple states tie for the highest posterior probability
+        at a given position, the state with the highest index is chosen.
+        
+        Args:
+            char_string: a string representing the sequence of observed characters (X)
+        Returns:
+            A string representing a sequence of hidden states.
+        """
         p = self.posterior_matrix(char_string)
         state_indices = [max((prob, i) for i, prob in enumerate(col))[1] for col in zip(*p)]
         return self.decode_states(state_indices)
      
     def most_probable_path(self, char_string):
-        """Computes a most probable path of hidden states for the observed sequence."""
+        """Computes a most probable path of hidden states for the observed sequence.
+
+        Args:
+            char_string: a string representing the sequence of observed characters (X)
+        Returns:
+            A string representing a most probable sequence of hidden states.
+        """
         V = self.viterbi_matrix(char_string)
         return self.viterbi_traceback(V)
 
     def viterbi_matrix(self, char_string):
-        """Computes and returns the (log-transformed) Viterbi dynamic programming matrix V for
-        the given observed sequence."""
+        """Computes the (log-transformed) Viterbi dynamic programming matrix V for
+        the given observed sequence.
+
+        Args:
+            char_string: a string representing the sequence of observed characters (X)
+        Returns:
+            A matrix (list of lists) representing the Viterbi dynamic programming matrix,
+            with rows corresponding to states and columns corresponding to positions in the
+            sequence.
+        """
 
         char_indices = self.encode_sequence(char_string)
         
@@ -166,10 +244,16 @@ class HiddenMarkovModel:
         return V
     
     def viterbi_traceback(self, V):
-        """Computes a most probable path given the (log) Viterbi dynamic programming matrix V.
+        """Computes a most probable path given a (log) Viterbi dynamic programming matrix.
         
         Uses a traceback procedure that does not require traceback pointers.  In the case of
         ties, this traceback prefers the state with the largest index.
+        
+        Args:
+            V: A matrix (list of lists) representing the Viterbi dynamic programming matrix
+               containing log-transformed values.
+        Returns:
+            A string representing a most probable sequence of hidden states
         """
         
         L = len(V[0])
@@ -188,9 +272,55 @@ class HiddenMarkovModel:
             state_indices[i - 1] = max_state
         return self.decode_states(state_indices)
 
+    def forward_matrix(self, char_string):
+        """Computes the (log-transformed) Forward dynamic programming matrix f for
+        the given observed sequence.
+
+        Args:
+            char_string: a string representing the sequence of observed characters (X)
+        Returns:
+            A matrix (list of lists) representing the Forward dynamic programming matrix,
+            with rows corresponding to states and columns corresponding to positions in the
+            sequence.
+        """
+
+        char_indices = self.encode_sequence(char_string)
+        
+        # Initialize the forward dynamic programming matrix
+        # the entry f[k][i] corresponds to the subproblem f_k(i+1)
+        # where i is a 0-based index (e.g., f[k][0] corresponds to the subproblem
+        # of the probability of the prefix of length = 1 and ending in state k). We will 
+        # not explicitly represent the begin or end states.  As a result, we will not
+        # explicitly store the initialization values described in the textbook and lecture.
+        f = matrix(len(self.states), len(char_string))
+        if not char_string: return f
+        
+        # initialization
+        for ell in range(len(self.states)):
+            f[ell][0] = (self.log_initial_probs[ell] +
+                         self.log_emission_prob_matrix[ell][char_indices[0]])
+
+        # main fill stage
+        for i in range(1, len(char_string)):
+            for ell in range(len(self.states)):                                     
+                f[ell][i] = (self.log_emission_prob_matrix[ell][char_indices[i]] + 
+                             sum_log_probs(f[k][i - 1] + 
+                                           self.log_transition_prob_matrix[k][ell]
+                                           for k in self.parents[ell]))
+ 
+        return f
+
     def backward_matrix(self, char_string):
-        """Computes and returns the (log-transformed) Backward dynamic programming matrix b for
-        the given observed sequence."""
+        """Computes the (log-transformed) Backward dynamic programming matrix f for
+        the given observed sequence.
+
+        Args:
+            char_string: a string representing the sequence of observed characters (X)
+        Returns:
+            A matrix (list of lists) representing the Backward dynamic programming matrix,
+            with rows corresponding to states and columns corresponding to positions in the
+            sequence.
+        """
 
         char_indices = self.encode_sequence(char_string)
         
@@ -219,15 +349,34 @@ class HiddenMarkovModel:
         of an observed sequence given this HMM"""
         f = forward if forward is not None else self.forward_matrix(char_string)
         return sum_log_probs(f[k][-1] for k in range(len(self.states)))
+    
+    def posterior_matrix(self, char_string, forward=None, backward=None):
+        """Computes the posterior probability matrix for the given observed sequence.
+
+        Args:
+            char_string: a string representing the sequence of observed characters (X)
+        Returns:
+            a matrix (list of lists) with the entry in the kth row and ith column (e.g., m[k][i]) 
+            giving the posterior probability that state k emitted character i, i.e., P(pi_i = k| x)
+        """
+        f = forward if forward is not None else self.forward_matrix(char_string)
+        b = backward if backward is not None else self.backward_matrix(char_string)
+        log_prob_seq = self.log_probability(char_string, f)
+        p = matrix(len(self.states), len(char_string))
+        for i in range(len(char_string)):
+            for k in range(len(self.states)):
+                p[k][i] = math.exp(f[k][i] + b[k][i] - log_prob_seq)
+        return p
 
 def sample_categorical(distribution):
     """Randomly sample from a categorical distribution (a discrete distribution over K categories).
     
     Args:
         distribution: a list of probabilities representing a discrete distribution over K categories.
+    
     Returns:
-        The index of the category sampled.
-    """
+        The index of the category sampled."""
+    
     r = random.random()
     for i, prob in enumerate(distribution):
         if r < prob:
@@ -296,6 +445,13 @@ def print_matrix(m, precision=3, width=10):
         print(''.join("{:{}.{}g}".format(x, width, precision) for x in row))
 
 NEGATIVE_INFINITY = float("-inf")
+def add_log_probs(log_p, log_q):
+    """Computes the sum of two probabilities in log space."""
+    if log_p == NEGATIVE_INFINITY:
+        return log_q
+    elif log_p < log_q:
+        log_p, log_q = log_q, log_p
+    return log_p + math.log(1 + math.exp(log_q - log_p))
 
 def sum_log_probs(log_probs):
     """Computes the sum of an iterable of probabilities in log space"""
