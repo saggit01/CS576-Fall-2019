@@ -1,0 +1,42 @@
+hematopoietic stem cell
+erythroid progenitor cell
+common myeloid progenitor
+polychromatophilic erythroblast
+orthochromatic erythroblast
+megakaryocyte
+alveolar macrophage
+leukocyte
+erythroid lineage cell
+myeloid dendritic cell
+plasmacytoid dendritic cell
+plasma cell
+memory B cell
+CD8-positive, alpha-beta thymocyte
+memory T cell
+precursor B cell
+hematopoietic multipotent progenitor cell
+myeloid lineage restricted progenitor cell
+germinal center B cell
+central nervous system macrophage
+CD4-positive, alpha-beta memory T cell
+T-helper 17 cell
+naive thymus-derived CD8-positive, alpha-beta T cell
+central memory CD8-positive, alpha-beta T cell
+CD8-positive, alpha-beta memory T cell
+effector memory CD8-positive, alpha-beta T cell
+early lymphoid progenitor
+IgG memory B cell
+plasmablast
+hematopoietic cell
+activated CD4-positive, alpha-beta T cell, human
+IgD-negative memory B cell
+common myeloid progenitor, CD34-positive
+effector memory CD8-positive, alpha-beta T cell, terminally differentiated
+macrophage dendritic cell progenitor
+pre-conventional dendritic cell
+T follicular helper cell
+innate effector T cell
+metamyelocyte
+myelocyte
+pleural macrophage
+cord blood hematopoietic stem cell
