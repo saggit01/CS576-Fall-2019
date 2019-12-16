@@ -1,0 +1,15 @@
+
+[Executed at: Sun Dec 15 20:29:01 PST 2019]
+
+Notebook: notebook.ipynb
+
+1. Criterion: bootstrap
+[Passed]
+
+2. Criterion: permute
+[Passed]
+
+3. Criterion: compute_feature_confidences
+[Passed]
+
+The notebook had 0 failure(s).
