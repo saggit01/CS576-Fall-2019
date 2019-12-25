@@ -1,6 +1,6 @@
 # BMI/CS 576 (Fall 2019): Introduction To Bioinformatics @ UWMadison
 
-| Name | Starter Code | Submission | Solution |
+| Name | Starter | Submission | Solution |
 | --- | --- | --- | --- |
 |Day 01 - Python Basics|[Starter](Day%2001%20-%20Python%20Basics/Starter/notebook.ipynb)|[Submission](Day%2001%20-%20Python%20Basics/Submission/notebook.ipynb)|[Solution](Day%2001%20-%20Python%20Basics/Solution/notebook.ipynb)
 |Day 02 - RNA Translation|[Starter](Day%2002%20-%20RNA%20Translation/Starter/notebook.ipynb)|[Submission](Day%2002%20-%20RNA%20Translation/Submission/notebook.ipynb)|[Solution](Day%2002%20-%20RNA%20Translation/Solution/notebook.ipynb)
