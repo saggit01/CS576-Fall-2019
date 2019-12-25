@@ -5,16 +5,16 @@ directories = sorted(
     d for d in os.listdir(".") if os.path.isdir(d) and not d.startswith(".")
 )
 
+
 for d in directories:
-    url = urllib.parse.quote(d)
-    solution_url = f"{url}/Solution"
-    starter_url = (
-        f"{url}/Starter"
-        if os.path.exists(os.path.join(d, "Starter"))
-        else f"{url}/Startercode"
-    )
-    submission_url = f"{url}/Submission"
+
+    def make_column(subdir_name, file_name="notebook.ipynb"):
+        path = os.path.join(d, subdir_name, file_name)
+        if os.path.exists(path):
+            return f"[{subdir_name}]({urllib.parse.quote(path)})"
+        else:
+            return ""
 
     print(
-        f"|{d}|[Starter Code]({starter_url})|[Submission]({submission_url})|[Solution]({solution_url})"
+        f"|{d}|{make_column('Starter')}|{make_column('Submission')}|{make_column('Solution')}"
     )
