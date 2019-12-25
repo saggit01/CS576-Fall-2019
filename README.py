@@ -7,4 +7,14 @@ directories = sorted(
 
 for d in directories:
     url = urllib.parse.quote(d)
-    print(f"""|{d}||""")
+    solution_url = f"{url}/Solution"
+    starter_url = (
+        f"{url}/Starter"
+        if os.path.exists(os.path.join(d, "Starter"))
+        else f"{url}/Startercode"
+    )
+    submission_url = f"{url}/Submission"
+
+    print(
+        f"|{d}|[Starter Code]({starter_url})|[Submission]({submission_url})|[Solution]({solution_url})"
+    )
