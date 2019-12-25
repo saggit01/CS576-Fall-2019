@@ -16,5 +16,5 @@ for d in directories:
             return ""
 
     print(
-        f"|{d}|{make_column('Starter')}|{make_column('Submission')}|{make_column('Solution')}"
+        f"|{d.replace(' - ', '|')}|{make_column('Starter')}|{make_column('Submission')}|{make_column('Solution')}"
     )
